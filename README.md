@@ -57,3 +57,5 @@ Results for January:
 Caveat: Cost can still be higher than monthly ceiling in one situation:
 01 Jan - 6$ spent on 6$ budget.
 
+To avoid this:
+Max(spendings, budget) will be used when calculating the monthly ceiling. This way, if the spendings are higher than the budget, we will use the spendings as the base for calculating the monthly ceiling, ensuring that it reflects the actual costs incurred.

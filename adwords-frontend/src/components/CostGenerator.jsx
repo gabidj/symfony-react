@@ -37,24 +37,9 @@ function getMonthKey(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
 }
 
-function calculateMonthlyCap(date, sortedBudgets) {
-  // Sum daily budgets from first day of month up to and including current day
-  const year = date.getFullYear()
-  const month = date.getMonth()
-  const firstDay = new Date(year, month, 1)
-
-  let monthlyCap = 0
-
-  const iterDay = new Date(firstDay)
-  while (iterDay <= date) {
-    const dayStart = new Date(iterDay)
-    dayStart.setHours(0, 0, 0, 0)
-    const dailyBudget = getBudgetAtTime(sortedBudgets, dayStart)
-    monthlyCap += dailyBudget
-    iterDay.setDate(iterDay.getDate() + 1)
-  }
-
-  return monthlyCap
+function calculateMonthlyCap(dailyBudget, dailySpent, previousDaysCap) {
+  // Monthly cap = previous days' cap + max(current daily budget, already spent today)
+  return previousDaysCap + Math.max(dailyBudget, dailySpent)
 }
 
 function generateRandomTimes(count) {
@@ -122,13 +107,7 @@ function generateCostEvent(costTime, dailyBudget, dailyLimit, dailyCumulative, m
   }
 }
 
-function generateCostsForDay(date, sortedBudgets, endDate, monthlyCap, monthlyStartCost) {
-  const dayStart = new Date(date)
-  dayStart.setHours(0, 0, 0, 0)
-
-  const dailyBudget = getBudgetAtTime(sortedBudgets, dayStart)
-  const dailyLimit = dailyBudget * 2
-
+function generateCostsForDay(date, sortedBudgets, endDate, previousDaysCap, monthlyStartCost) {
   // Generate 1-10 random cost events for this day
   const numCosts = Math.floor(Math.random() * 10) + 1
   const randomTimes = generateRandomTimes(numCosts)
@@ -142,6 +121,13 @@ function generateCostsForDay(date, sortedBudgets, endDate, monthlyCap, monthlySt
     costTime.setHours(timeSlot.hours, timeSlot.minutes, 0, 0)
 
     if (costTime > endDate) break
+
+    // Get budget at the actual time of this cost event
+    const dailyBudget = getBudgetAtTime(sortedBudgets, costTime)
+    const dailyLimit = dailyBudget * 2
+
+    // Monthly cap = previous days' cap + max(current budget, already spent today)
+    const monthlyCap = calculateMonthlyCap(dailyBudget, dailyCumulative, previousDaysCap)
 
     const event = generateCostEvent(costTime, dailyBudget, dailyLimit, dailyCumulative, monthlyCap, monthlyCumulative)
     dailyCumulative += event.actualCostNum
@@ -157,7 +143,13 @@ function generateCostsForDay(date, sortedBudgets, endDate, monthlyCap, monthlySt
     })
   }
 
-  return { dayCosts, monthlyEndCost: monthlyCumulative }
+  // Final daily cap contribution = max(last budget of day, total spent)
+  const dayEnd = new Date(date)
+  dayEnd.setHours(23, 59, 59, 999)
+  const endOfDayBudget = getBudgetAtTime(sortedBudgets, dayEnd)
+  const dailyCapContribution = Math.max(endOfDayBudget, dailyCumulative)
+
+  return { dayCosts, monthlyEndCost: monthlyCumulative, dailyCapContribution }
 }
 
 function generateCosts(budgetEntries) {
@@ -174,17 +166,19 @@ function generateCosts(budgetEntries) {
   const costs = []
   const iterDate = new Date(startDate)
   const monthlyCosts = {} // Track cumulative cost per month
+  const monthlyCaps = {} // Track cumulative cap per month (from previous days)
 
   while (iterDate <= endDate) {
     const monthKey = getMonthKey(iterDate)
-    const monthlyCap = calculateMonthlyCap(iterDate, sortedBudgets)
+    const previousDaysCap = monthlyCaps[monthKey] || 0
     const monthlyStartCost = monthlyCosts[monthKey] || 0
 
-    const { dayCosts, monthlyEndCost } = generateCostsForDay(
-      iterDate, sortedBudgets, endDate, monthlyCap, monthlyStartCost
+    const { dayCosts, monthlyEndCost, dailyCapContribution } = generateCostsForDay(
+      iterDate, sortedBudgets, endDate, previousDaysCap, monthlyStartCost
     )
 
     monthlyCosts[monthKey] = monthlyEndCost
+    monthlyCaps[monthKey] = previousDaysCap + dailyCapContribution
     costs.push(...dayCosts)
     iterDate.setDate(iterDate.getDate() + 1)
   }
