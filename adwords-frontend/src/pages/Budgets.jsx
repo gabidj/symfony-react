@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import CostGenerator from '../components/CostGenerator.jsx'
 import './Budgets.css'
 
 function parseCSV(text) {
@@ -122,6 +123,8 @@ function Budgets() {
               </tbody>
             </table>
           </div>
+
+          <CostGenerator budgetData={parsedData} />
         </div>
       )}
     </div>

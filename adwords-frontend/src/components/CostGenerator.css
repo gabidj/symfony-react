@@ -1,0 +1,99 @@
+.cost-generator {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 1px solid #444;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.cost-generator h3 {
+  margin: 0 0 0.5rem 0;
+}
+
+.cost-generator .hint {
+  color: #888;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.cost-generator .generate-btn {
+  background-color: #646cff;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+.cost-generator .generate-btn:hover {
+  background-color: #535bf2;
+}
+
+.cost-generator .error-message {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #ff4444;
+  color: white;
+  border-radius: 4px;
+}
+
+.costs-results {
+  margin-top: 1.5rem;
+}
+
+.costs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.costs-header h4 {
+  margin: 0;
+}
+
+.export-btn {
+  background-color: #22c55e;
+  color: white;
+}
+
+.export-btn:hover {
+  background-color: #16a34a;
+}
+
+.costs-results .table-container {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.costs-results table {
+  font-size: 0.85rem;
+}
+
+.costs-results th,
+.costs-results td {
+  padding: 0.5rem 0.75rem;
+}
+
+.rejected-cost {
+  background-color: rgba(239, 68, 68, 0.15);
+}
+
+.accepted-cost {
+  background-color: rgba(34, 197, 94, 0.1);
+}
+
+.status-accepted {
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.status-rejected {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+@media (prefers-color-scheme: light) {
+  .cost-generator {
+    border-color: #ddd;
+    background: rgba(0, 0, 0, 0.02);
+  }
+}
