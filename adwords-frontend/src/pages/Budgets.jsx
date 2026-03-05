@@ -47,6 +47,14 @@ function Budgets() {
         return new Date(yearA, monthA - 1, dayA, hoursA, minsA) - new Date(yearB, monthB - 1, dayB, hoursB, minsB)
       })
 
+      // Sanitize budget values: treat non-numbers and negative numbers as 0
+      for (const row of result.rows) {
+        const parsed = parseFloat(row.value)
+        if (isNaN(parsed) || parsed < 0) {
+          row.value = '0'
+        }
+      }
+
       // If last entry doesn't have 0 budget, add auto-added end row
       const lastRow = result.rows[result.rows.length - 1]
       if (lastRow && parseFloat(lastRow.value) !== 0) {
