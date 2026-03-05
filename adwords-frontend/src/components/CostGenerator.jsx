@@ -33,6 +33,30 @@ function getBudgetAtTime(budgetEntries, targetTime) {
   return currentBudget
 }
 
+function getMonthKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+}
+
+function calculateMonthlyCap(date, sortedBudgets) {
+  // Sum daily budgets from first day of month up to and including current day
+  const year = date.getFullYear()
+  const month = date.getMonth()
+  const firstDay = new Date(year, month, 1)
+
+  let monthlyCap = 0
+
+  const iterDay = new Date(firstDay)
+  while (iterDay <= date) {
+    const dayStart = new Date(iterDay)
+    dayStart.setHours(0, 0, 0, 0)
+    const dailyBudget = getBudgetAtTime(sortedBudgets, dayStart)
+    monthlyCap += dailyBudget
+    iterDay.setDate(iterDay.getDate() + 1)
+  }
+
+  return monthlyCap
+}
+
 function generateRandomTimes(count) {
   // Generate random times in 5-minute intervals (0-287 slots per day)
   const slots = []
@@ -72,10 +96,12 @@ function parseBudgetEntries(budgetEntries) {
   return sortedBudgets
 }
 
-function generateCostEvent(costTime, dailyBudget, dailyLimit, cumulativeCost) {
+function generateCostEvent(costTime, dailyBudget, dailyLimit, dailyCumulative, monthlyCap, monthlyCumulative) {
   // Generate random cost between 0.00 and 20.00
   const proposedCost = Math.round(Math.random() * 2000) / 100
-  const remainingLimit = Math.max(0, dailyLimit - cumulativeCost)
+  const remainingDaily = Math.max(0, dailyLimit - dailyCumulative)
+  const remainingMonthly = Math.max(0, monthlyCap - monthlyCumulative)
+  const remainingLimit = Math.min(remainingDaily, remainingMonthly)
 
   let status = 'rejected'
   let actualCost = 0
@@ -96,7 +122,7 @@ function generateCostEvent(costTime, dailyBudget, dailyLimit, cumulativeCost) {
   }
 }
 
-function generateCostsForDay(date, sortedBudgets, endDate) {
+function generateCostsForDay(date, sortedBudgets, endDate, monthlyCap, monthlyStartCost) {
   const dayStart = new Date(date)
   dayStart.setHours(0, 0, 0, 0)
 
@@ -108,7 +134,8 @@ function generateCostsForDay(date, sortedBudgets, endDate) {
   const randomTimes = generateRandomTimes(numCosts)
 
   const dayCosts = []
-  let cumulativeCost = 0
+  let dailyCumulative = 0
+  let monthlyCumulative = monthlyStartCost
 
   for (const timeSlot of randomTimes) {
     const costTime = new Date(date)
@@ -116,18 +143,21 @@ function generateCostsForDay(date, sortedBudgets, endDate) {
 
     if (costTime > endDate) break
 
-    const event = generateCostEvent(costTime, dailyBudget, dailyLimit, cumulativeCost)
-    cumulativeCost += event.actualCostNum
+    const event = generateCostEvent(costTime, dailyBudget, dailyLimit, dailyCumulative, monthlyCap, monthlyCumulative)
+    dailyCumulative += event.actualCostNum
+    monthlyCumulative += event.actualCostNum
 
     dayCosts.push({
       ...event,
-      dailyCumulative: cumulativeCost.toFixed(2),
+      dailyCumulative: dailyCumulative.toFixed(2),
       dailyLimit: dailyLimit.toFixed(2),
-      remainingLimit: Math.max(0, dailyLimit - cumulativeCost).toFixed(2)
+      remainingLimit: Math.max(0, dailyLimit - dailyCumulative).toFixed(2),
+      monthlyCap: monthlyCap.toFixed(2),
+      monthlyCost: monthlyCumulative.toFixed(2)
     })
   }
 
-  return dayCosts
+  return { dayCosts, monthlyEndCost: monthlyCumulative }
 }
 
 function generateCosts(budgetEntries) {
@@ -143,9 +173,18 @@ function generateCosts(budgetEntries) {
 
   const costs = []
   const iterDate = new Date(startDate)
+  const monthlyCosts = {} // Track cumulative cost per month
 
   while (iterDate <= endDate) {
-    const dayCosts = generateCostsForDay(iterDate, sortedBudgets, endDate)
+    const monthKey = getMonthKey(iterDate)
+    const monthlyCap = calculateMonthlyCap(iterDate, sortedBudgets)
+    const monthlyStartCost = monthlyCosts[monthKey] || 0
+
+    const { dayCosts, monthlyEndCost } = generateCostsForDay(
+      iterDate, sortedBudgets, endDate, monthlyCap, monthlyStartCost
+    )
+
+    monthlyCosts[monthKey] = monthlyEndCost
     costs.push(...dayCosts)
     iterDate.setDate(iterDate.getDate() + 1)
   }
@@ -184,11 +223,11 @@ function CostGenerator({ budgetData }) {
   const handleExport = () => {
     if (!generatedCosts) return
 
-    const headers = ['date', 'time', 'budget', 'proposed_cost', 'actual_cost', 'status', 'daily_cumulative', 'daily_limit', 'remaining_limit']
+    const headers = ['date', 'time', 'budget', 'proposed_cost', 'actual_cost', 'status', 'daily_cumulative', 'daily_limit', 'remaining_limit', 'monthly_cap', 'monthly_cost']
     const csvRows = [
       headers.join(','),
       ...generatedCosts.map(row =>
-        [row.date, row.time, row.budget, row.proposedCost, row.actualCost, row.status, row.dailyCumulative, row.dailyLimit, row.remainingLimit].join(',')
+        [row.date, row.time, row.budget, row.proposedCost, row.actualCost, row.status, row.dailyCumulative, row.dailyLimit, row.remainingLimit, row.monthlyCap, row.monthlyCost].join(',')
       )
     ]
     const csvContent = csvRows.join('\n')
@@ -208,7 +247,8 @@ function CostGenerator({ budgetData }) {
       <p className="hint">
         Generates 1-10 random costs per day at 5-minute intervals.
         Costs range from $0.00 to $20.00. Daily limit is 2x budget.
-        Costs exceeding the remaining daily limit are rejected.
+        Monthly cap is sum of daily budgets for the month.
+        Costs exceeding daily limit or monthly cap are rejected.
       </p>
 
       <button onClick={handleGenerate} className="generate-btn">
@@ -240,6 +280,8 @@ function CostGenerator({ budgetData }) {
                   <th>Daily Cum.</th>
                   <th>Daily Limit</th>
                   <th>Remaining</th>
+                  <th>Monthly Cap</th>
+                  <th>Monthly Cost</th>
                 </tr>
               </thead>
               <tbody>
@@ -254,6 +296,8 @@ function CostGenerator({ budgetData }) {
                     <td>{row.dailyCumulative}</td>
                     <td>{row.dailyLimit}</td>
                     <td>{row.remainingLimit}</td>
+                    <td>{row.monthlyCap}</td>
+                    <td>{row.monthlyCost}</td>
                   </tr>
                 ))}
               </tbody>
