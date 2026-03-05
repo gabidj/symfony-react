@@ -1,0 +1,135 @@
+.budgets-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.budgets-page h1 {
+  margin-bottom: 2rem;
+}
+
+.csv-input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.file-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.file-upload input[type="file"] {
+  padding: 0.5rem;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #1a1a1a;
+  color: inherit;
+}
+
+.csv-textarea {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.csv-textarea textarea {
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #1a1a1a;
+  color: inherit;
+  font-family: monospace;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
+.csv-textarea textarea:focus {
+  outline: none;
+  border-color: #646cff;
+}
+
+.actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.actions button.secondary {
+  background-color: #333;
+}
+
+.error-message {
+  padding: 1rem;
+  background: #ff4444;
+  color: white;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.results-section {
+  margin-top: 2rem;
+}
+
+.results-section h2 {
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+th, td {
+  padding: 0.75rem 1rem;
+  border: 1px solid #444;
+}
+
+th {
+  background: #333;
+  font-weight: 600;
+}
+
+tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+tr:hover {
+  background: rgba(100, 108, 255, 0.1);
+}
+
+@media (prefers-color-scheme: light) {
+  .file-upload input[type="file"] {
+    background: #f9f9f9;
+    border-color: #ddd;
+  }
+
+  .csv-textarea textarea {
+    background: #f9f9f9;
+    border-color: #ddd;
+  }
+
+  .actions button.secondary {
+    background-color: #e0e0e0;
+  }
+
+  th, td {
+    border-color: #ddd;
+  }
+
+  th {
+    background: #f0f0f0;
+  }
+
+  tr:nth-child(even) {
+    background: rgba(0, 0, 0, 0.03);
+  }
+}

@@ -5,6 +5,47 @@
   text-align: center;
 }
 
+.main-nav {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #444;
+}
+
+.main-nav a {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.main-nav a:hover {
+  background-color: rgba(100, 108, 255, 0.1);
+}
+
+.nav-button {
+  display: inline-block;
+  padding: 0.6em 1.2em;
+  border-radius: 8px;
+  background-color: #646cff;
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.25s;
+}
+
+.nav-button:hover {
+  background-color: #535bf2;
+  color: white;
+}
+
+@media (prefers-color-scheme: light) {
+  .main-nav {
+    border-bottom-color: #ddd;
+  }
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
