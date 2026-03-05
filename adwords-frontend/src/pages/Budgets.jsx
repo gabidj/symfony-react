@@ -38,6 +38,14 @@ function Budgets() {
         return
       }
 
+      // Deduplicate: keep only the last entry for each timestamp
+      const deduped = new Map()
+      for (const row of result.rows) {
+        const key = `${row.date}|${row.time}`
+        deduped.set(key, row)
+      }
+      result.rows = Array.from(deduped.values())
+
       // Sort rows by date and time
       result.rows.sort((a, b) => {
         const [monthA, dayA, yearA] = (a.date || '').split('.')
