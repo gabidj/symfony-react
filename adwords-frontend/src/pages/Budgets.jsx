@@ -38,6 +38,30 @@ function Budgets() {
         return
       }
 
+      // Sort rows by date and time
+      result.rows.sort((a, b) => {
+        const [monthA, dayA, yearA] = (a.date || '').split('.')
+        const [monthB, dayB, yearB] = (b.date || '').split('.')
+        const [hoursA, minsA] = (a.time || '00:00').split(':')
+        const [hoursB, minsB] = (b.time || '00:00').split(':')
+        return new Date(yearA, monthA - 1, dayA, hoursA, minsA) - new Date(yearB, monthB - 1, dayB, hoursB, minsB)
+      })
+
+      // If last entry doesn't have 0 budget, add auto-added end row
+      const lastRow = result.rows[result.rows.length - 1]
+      if (lastRow && parseFloat(lastRow.value) !== 0) {
+        const [month, day, year] = lastRow.date.split('.')
+        const nextMonth = new Date(year, month, 1)
+        const newDate = `${String(nextMonth.getMonth() + 1).padStart(2, '0')}.01.${nextMonth.getFullYear()}`
+
+        result.rows.push({
+          date: newDate,
+          time: '00:00',
+          value: '0',
+          note: 'Auto-added end'
+        })
+      }
+
       setParsedData(result)
       setError('')
     } catch (err) {

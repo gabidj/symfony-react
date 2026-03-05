@@ -81,6 +81,10 @@
   background-color: rgba(34, 197, 94, 0.1);
 }
 
+.zero-budget {
+  opacity: 0.5;
+}
+
 .status-accepted {
   color: #22c55e;
   font-weight: 600;

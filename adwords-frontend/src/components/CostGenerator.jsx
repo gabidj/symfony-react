@@ -61,6 +61,20 @@ function generateCosts(budgetEntries) {
 
   const sortedBudgets = [...budgetEntries].sort((a, b) => a.dateTime - b.dateTime)
 
+  // If last entry doesn't have 0 budget, add one on first day of next month
+  const lastEntry = sortedBudgets[sortedBudgets.length - 1]
+  if (lastEntry.value !== 0) {
+    const nextMonth = new Date(lastEntry.dateTime)
+    nextMonth.setMonth(nextMonth.getMonth() + 1)
+    nextMonth.setDate(1)
+    nextMonth.setHours(0, 0, 0, 0)
+    sortedBudgets.push({
+      dateTime: nextMonth,
+      value: 0,
+      note: 'Auto-added end'
+    })
+  }
+
   const startDate = new Date(sortedBudgets[0].dateTime)
   startDate.setHours(0, 0, 0, 0)
 
@@ -219,7 +233,7 @@ function CostGenerator({ budgetData }) {
               </thead>
               <tbody>
                 {generatedCosts.map((row, i) => (
-                  <tr key={i} className={row.status === 'rejected' ? 'rejected-cost' : 'accepted-cost'}>
+                  <tr key={i} className={row.budget === 0 ? 'zero-budget' : (row.status === 'rejected' ? 'rejected-cost' : 'accepted-cost')}>
                     <td>{row.date}</td>
                     <td>{row.time}</td>
                     <td>{row.budget}</td>
