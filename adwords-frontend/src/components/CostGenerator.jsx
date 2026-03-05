@@ -97,8 +97,8 @@ function parseBudgetEntries(budgetEntries) {
 }
 
 function generateCostEvent(costTime, dailyBudget, dailyLimit, dailyCumulative, monthlyCap, monthlyCumulative) {
-  // Generate random cost between 0.00 and 20.00
-  const proposedCost = Math.round(Math.random() * 2000) / 100
+  // Generate random cost between 0.10 and 20.00
+  const proposedCost = Math.round(10 + Math.random() * 1990) / 100
   const remainingDaily = Math.max(0, dailyLimit - dailyCumulative)
   const remainingMonthly = Math.max(0, monthlyCap - monthlyCumulative)
   const remainingLimit = Math.min(remainingDaily, remainingMonthly)
