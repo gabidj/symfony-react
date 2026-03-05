@@ -21,10 +21,6 @@ function formatTime(date) {
   return `${hours}:${minutes}`
 }
 
-function getDayKey(date) {
-  return formatDate(date)
-}
-
 function getBudgetAtTime(budgetEntries, targetTime) {
   let currentBudget = 0
   for (const entry of budgetEntries) {
@@ -56,14 +52,12 @@ function generateRandomTimes(count) {
   })
 }
 
-function generateCosts(budgetEntries) {
-  if (budgetEntries.length === 0) return []
-
+function parseBudgetEntries(budgetEntries) {
   const sortedBudgets = [...budgetEntries].sort((a, b) => a.dateTime - b.dateTime)
 
   // If last entry doesn't have 0 budget, add one on first day of next month
   const lastEntry = sortedBudgets[sortedBudgets.length - 1]
-  if (lastEntry.value !== 0) {
+  if (lastEntry && lastEntry.value !== 0) {
     const nextMonth = new Date(lastEntry.dateTime)
     nextMonth.setMonth(nextMonth.getMonth() + 1)
     nextMonth.setDate(1)
@@ -75,67 +69,84 @@ function generateCosts(budgetEntries) {
     })
   }
 
+  return sortedBudgets
+}
+
+function generateCostEvent(costTime, dailyBudget, dailyLimit, cumulativeCost) {
+  // Generate random cost between 0.00 and 20.00
+  const proposedCost = Math.round(Math.random() * 2000) / 100
+  const remainingLimit = Math.max(0, dailyLimit - cumulativeCost)
+
+  let status = 'rejected'
+  let actualCost = 0
+
+  if (dailyBudget > 0 && proposedCost <= remainingLimit) {
+    status = 'accepted'
+    actualCost = proposedCost
+  }
+
+  return {
+    date: formatDate(costTime),
+    time: formatTime(costTime),
+    budget: dailyBudget,
+    proposedCost: proposedCost.toFixed(2),
+    actualCost: actualCost.toFixed(2),
+    status,
+    actualCostNum: actualCost
+  }
+}
+
+function generateCostsForDay(date, sortedBudgets, endDate) {
+  const dayStart = new Date(date)
+  dayStart.setHours(0, 0, 0, 0)
+
+  const dailyBudget = getBudgetAtTime(sortedBudgets, dayStart)
+  const dailyLimit = dailyBudget * 2
+
+  // Generate 1-10 random cost events for this day
+  const numCosts = Math.floor(Math.random() * 10) + 1
+  const randomTimes = generateRandomTimes(numCosts)
+
+  const dayCosts = []
+  let cumulativeCost = 0
+
+  for (const timeSlot of randomTimes) {
+    const costTime = new Date(date)
+    costTime.setHours(timeSlot.hours, timeSlot.minutes, 0, 0)
+
+    if (costTime > endDate) break
+
+    const event = generateCostEvent(costTime, dailyBudget, dailyLimit, cumulativeCost)
+    cumulativeCost += event.actualCostNum
+
+    dayCosts.push({
+      ...event,
+      dailyCumulative: cumulativeCost.toFixed(2),
+      dailyLimit: dailyLimit.toFixed(2),
+      remainingLimit: Math.max(0, dailyLimit - cumulativeCost).toFixed(2)
+    })
+  }
+
+  return dayCosts
+}
+
+function generateCosts(budgetEntries) {
+  if (budgetEntries.length === 0) return []
+
+  const sortedBudgets = parseBudgetEntries(budgetEntries)
+
   const startDate = new Date(sortedBudgets[0].dateTime)
   startDate.setHours(0, 0, 0, 0)
 
-  const endDate = new Date(sortedBudgets[sortedBudgets.length - 1].dateTime)
+  const endDate = new Date(sortedBudgets.at(-1).dateTime)
   endDate.setHours(23, 59, 0, 0)
 
-  // Generate costs - at most 10 per day at random times
   const costs = []
-  const dailyCumulativeCosts = {}
-
   const iterDate = new Date(startDate)
+
   while (iterDate <= endDate) {
-    const dayKey = getDayKey(iterDate)
-
-    // Get budget for this day (use budget at start of day)
-    const dayStart = new Date(iterDate)
-    dayStart.setHours(0, 0, 0, 0)
-    const dailyBudget = getBudgetAtTime(sortedBudgets, dayStart)
-    const dailyLimit = dailyBudget * 2
-
-    // Generate 1-10 random cost events for this day
-    const numCosts = Math.floor(Math.random() * 10) + 1
-    const randomTimes = generateRandomTimes(numCosts)
-
-    dailyCumulativeCosts[dayKey] = 0
-
-    for (const timeSlot of randomTimes) {
-      const costTime = new Date(iterDate)
-      costTime.setHours(timeSlot.hours, timeSlot.minutes, 0, 0)
-
-      if (costTime > endDate) break
-
-      // Generate random cost between 0.00 and 20.00
-      const proposedCost = Math.round(Math.random() * 2000) / 100
-
-      const currentDailyCost = dailyCumulativeCosts[dayKey]
-      const remainingLimit = Math.max(0, dailyLimit - currentDailyCost)
-
-      // Determine if cost is accepted or rejected
-      let status = 'rejected'
-      let actualCost = 0
-
-      if (dailyBudget > 0 && proposedCost <= remainingLimit) {
-        status = 'accepted'
-        actualCost = proposedCost
-        dailyCumulativeCosts[dayKey] = currentDailyCost + actualCost
-      }
-
-      costs.push({
-        date: formatDate(costTime),
-        time: formatTime(costTime),
-        budget: dailyBudget,
-        proposedCost: proposedCost.toFixed(2),
-        actualCost: actualCost.toFixed(2),
-        status: status,
-        dailyCumulative: dailyCumulativeCosts[dayKey].toFixed(2),
-        dailyLimit: dailyLimit.toFixed(2),
-        remainingLimit: Math.max(0, dailyLimit - dailyCumulativeCosts[dayKey]).toFixed(2)
-      })
-    }
-
+    const dayCosts = generateCostsForDay(iterDate, sortedBudgets, endDate)
+    costs.push(...dayCosts)
     iterDate.setDate(iterDate.getDate() + 1)
   }
 
